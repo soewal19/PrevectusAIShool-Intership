@@ -1,0 +1,77 @@
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality-checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run linting
+        run: |
+          chmod +x CI_CD/scripts/run_linting.sh
+          CI_CD/scripts/run_linting.sh
+
+      - name: Run type checking
+        run: |
+          chmod +x CI_CD/scripts/run_typecheck.sh
+          CI_CD/scripts/run_typecheck.sh
+
+      - name: Run tests
+        run: |
+          chmod +x CI_CD/scripts/run_tests.sh
+          CI_CD/scripts/run_tests.sh
+
+      - name: Upload test coverage
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: quality-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: claude-analytics:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
