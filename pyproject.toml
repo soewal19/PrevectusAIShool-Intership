@@ -6,6 +6,7 @@ reportMissingTypeStubs = false
 reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
 reportUnknownArgumentType = "none"
+reportUnknownParameterType = "none"
 pythonVersion = "3.12"
 pythonPlatform = "All"
 venvPath = "."
