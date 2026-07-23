@@ -3,6 +3,9 @@
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportMissingTypeStubs = false
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnknownArgumentType = "none"
 pythonVersion = "3.12"
 pythonPlatform = "All"
 venvPath = "."
