@@ -9,7 +9,11 @@ sys.path.insert(0, str(project_root))
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+from dotenv import load_dotenv
 from src.infrastructure.analytics_service import DuckDBAnalyticsService
+from src.infrastructure.insight_service import OpenAIInsightService
+
+load_dotenv()
 
 st.set_page_config(
     page_title="Claude Code Usage Analytics",
@@ -22,11 +26,18 @@ st.title("🤖 Claude Code Usage Analytics Dashboard")
 
 def main() -> None:
     analytics = DuckDBAnalyticsService()
+    
+    # Initialize insight service if possible
+    insight_service = None
+    try:
+        insight_service = OpenAIInsightService()
+    except Exception:
+        pass
 
     st.sidebar.header("Navigation")
     page = st.sidebar.radio(
         "Select Page",
-        ["Overview", "Cost & Models", "Tools", "Caching"]
+        ["Overview", "Cost & Models", "Tools", "Caching", "Insights"]
     )
 
     daily_metrics: pd.DataFrame = analytics.get_daily_metrics()
@@ -41,6 +52,8 @@ def main() -> None:
         display_tools(analytics)
     elif page == "Caching":
         display_caching(analytics)
+    elif page == "Insights":
+        display_insights(analytics, insight_service)
 
 
 def display_overview(
@@ -298,13 +311,77 @@ def display_caching(analytics: DuckDBAnalyticsService) -> None:
         
         # Efficiency details
         st.subheader("⚡ Efficiency Overview")
-        eff_col1, eff_col2, eff_col3 = st.columns(3)
-        with eff_col1:
-            st.metric("Total API Requests", f"{int(efficiency_pd['total_api_requests']):,}")
-        with eff_col2:
-            st.metric("Requests with Cache Read", f"{int(efficiency_pd['requests_with_cache_read']):,}")
-        with eff_col3:
-            st.metric("Requests with Cache Create", f"{int(efficiency_pd['requests_with_cache_create']):,}")
+    eff_col1, eff_col2, eff_col3 = st.columns(3)
+    with eff_col1:
+        st.metric("Total API Requests", f"{int(efficiency_pd['total_api_requests']):,}")
+    with eff_col2:
+        st.metric("Requests with Cache Read", f"{int(efficiency_pd['requests_with_cache_read']):,}")
+    with eff_col3:
+        st.metric("Requests with Cache Create", f"{int(efficiency_pd['requests_with_cache_create']):,}")
+
+
+def display_insights(analytics: DuckDBAnalyticsService, insight_service):
+    st.header("💡 AI-Powered Insights")
+    
+    if not insight_service:
+        st.warning("Insight service not available. Please set the OPENAI_API_KEY environment variable to use this feature.")
+        return
+    
+    # Collect analytics data
+    analytics_data = {
+        "daily_metrics": analytics.get_daily_metrics().to_dict(orient="records") if not analytics.get_daily_metrics().empty else [],
+        "event_distribution": analytics.get_event_distribution().to_dict(orient="records") if not analytics.get_event_distribution().empty else [],
+        "user_role_distribution": analytics.get_user_role_distribution().to_dict(orient="records") if not analytics.get_user_role_distribution().empty else [],
+        "model_usage": analytics.get_model_usage().to_dict(orient="records") if not analytics.get_model_usage().empty else [],
+        "tool_usage": analytics.get_tool_usage().to_dict(orient="records") if not analytics.get_tool_usage().empty else [],
+        "cost_by_practice": analytics.get_cost_by_practice().to_dict(orient="records") if not analytics.get_cost_by_practice().empty else [],
+        "cache_usage": analytics.get_cache_usage().to_dict(orient="records") if not analytics.get_cache_usage().empty else [],
+        "cache_efficiency": analytics.get_cache_efficiency().to_dict(orient="records") if not analytics.get_cache_efficiency().empty else [],
+        "top_cache_users": analytics.get_top_cache_users().to_dict(orient="records") if not analytics.get_top_cache_users().empty else []
+    }
+    
+    # Generate insights with caching
+    if "summary" not in st.session_state or st.button("🔄 Regenerate Insights"):
+        with st.spinner("Generating insights..."):
+            try:
+                st.session_state.summary = insight_service.generate_executive_summary(analytics_data)
+                st.session_state.anomalies = insight_service.detect_anomalies(analytics_data)
+                st.session_state.user_insights = insight_service.generate_user_insights(analytics_data)
+            except Exception as e:
+                st.error(f"Error generating insights: {str(e)}")
+                return
+    
+    # Executive Summary
+    st.subheader("📋 Executive Summary")
+    st.write(st.session_state.summary)
+    
+    st.divider()
+    
+    # Anomalies
+    st.subheader("🔍 Anomaly Detection")
+    for anomaly in st.session_state.anomalies:
+        severity_colors = {"low": "🟢", "medium": "🟡", "high": "🔴"}
+        color = severity_colors.get(anomaly.get("severity", "medium"), "🟡")
+        st.markdown(f"### {color} {anomaly.get('title', 'Anomaly')}")
+        st.write(f"**Description:** {anomaly.get('description', 'No description')}")
+        st.write(f"**Potential Impact:** {anomaly.get('potential_impact', 'No impact')}")
+        st.write(f"**Recommendation:** {anomaly.get('recommendation', 'No recommendation')}")
+    
+    st.divider()
+    
+    # User Insights
+    st.subheader("👥 User Insights")
+    for insight in st.session_state.user_insights:
+        category_icons = {
+            "usage": "📊", 
+            "cost": "💰", 
+            "cache": "💾", 
+            "productivity": "🚀"
+        }
+        icon = category_icons.get(insight.get("category", "usage"), "📊")
+        st.markdown(f"### {icon} {insight.get('title', 'Insight')}")
+        st.write(f"**Insight:** {insight.get('insight', 'No insight')}")
+        st.write(f"**Actionable Step:** {insight.get('actionable_step', 'No actionable step')}")
 
 
 if __name__ == "__main__":

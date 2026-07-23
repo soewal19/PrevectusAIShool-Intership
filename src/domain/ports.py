@@ -59,3 +59,17 @@ class AnalyticsService(ABC):
     def get_daily_cache_metrics(self):
         pass
 
+
+class InsightService(ABC):
+    @abstractmethod
+    def generate_executive_summary(self, analytics_data: dict) -> str:
+        pass
+    
+    @abstractmethod
+    def detect_anomalies(self, analytics_data: dict) -> List[dict]:
+        pass
+    
+    @abstractmethod
+    def generate_user_insights(self, analytics_data: dict) -> List[dict]:
+        pass
+
