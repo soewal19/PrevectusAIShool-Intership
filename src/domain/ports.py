@@ -1,6 +1,6 @@
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict, Any
 from src.domain.models import TelemetryEvent
 
 
@@ -62,14 +62,14 @@ class AnalyticsService(ABC):
 
 class InsightService(ABC):
     @abstractmethod
-    def generate_executive_summary(self, analytics_data: dict) -> str:
+    def generate_executive_summary(self, analytics_data: Dict[str, Any]) -> str:
         pass
     
     @abstractmethod
-    def detect_anomalies(self, analytics_data: dict) -> List[dict]:
+    def detect_anomalies(self, analytics_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         pass
     
     @abstractmethod
-    def generate_user_insights(self, analytics_data: dict) -> List[dict]:
+    def generate_user_insights(self, analytics_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         pass
 
