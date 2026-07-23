@@ -5,10 +5,11 @@
 An end-to-end analytics platform for processing and visualizing Claude Code telemetry data, built with AI-assisted development and following modern software engineering practices.
 
 Key features:
-- Hexagonal (Ports &amp; Adapters) architecture for maintainability and testability
+- Hexagonal (Ports & Adapters) architecture for maintainability and testability
 - AI Operating System (ai-agent/) with custom skills, rules, and agent team configuration
 - Data ingestion, processing, and analytics using DuckDB and Polars
 - Interactive dashboard with Streamlit and Plotly
+- **AI-powered insights generation** (executive summaries, anomaly detection, user insights) using OpenAI
 - FastAPI backend for programmatic access
 - Docker Compose for easy deployment
 - Comprehensive tests and quality checks
